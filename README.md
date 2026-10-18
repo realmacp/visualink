@@ -18,10 +18,11 @@ Visualink sits in between. Close the tab and keep the link as a light card with 
 - Create your own **collections** (Work, School, Recipes…).
 - **Drag a card** onto another to swap their places, or drop it on a collection to move it there.
 - Tags, search, and sorting by date, title or site.
+- Hover a card to pin, archive, edit or copy its link.
 - Three layouts: grid, list and compact. Follows your light/dark theme.
 - Tracking parameters (`utm_*`, `fbclid`…) are removed automatically.
 - Save from your browser with the bookmarklet (Settings → Visualink).
-- Export all links to a Markdown note.
+- Export your links to a file and import them into another vault, or export them to a Markdown note.
 
 ## Embed cards in a note
 
@@ -40,6 +41,8 @@ Visualink has no telemetry, accounts or servers. It only connects to the interne
 
 - Read a page's metadata when you save a link or refresh a card. If a site hides its preview from regular requests, Visualink asks again as `VisualinkBot` and, for some sites (YouTube, Reddit, X, TikTok, Bluesky, Vimeo), uses their public oEmbed service.
 - Download the page's cover and icon into `Visualink/assets/` in your vault. If image caching is turned off, images load from their original site instead.
+
+Export and import only read or write the file you choose.
 
 It reads the clipboard only when you run *Save link(s) from clipboard* or open the *Save a link* dialog (to prefill a copied link).
 

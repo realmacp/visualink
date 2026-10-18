@@ -370,6 +370,7 @@ body.vl-dragging, body.vl-dragging * { cursor: grabbing; user-select: none; }
 
 /* Modals and settings */
 .visualink-modal .vl-modal-wide { width: 100%; min-width: 260px; }
+.vl-import-summary { margin: 0 0 8px; padding-left: 1.2em; line-height: 1.7; }
 .vl-bookmarklet { white-space: pre-wrap; word-break: break-all; font-size: 0.8em; }
 
 /* Narrow panes */

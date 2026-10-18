@@ -202,6 +202,9 @@ export class VisualinkView extends ItemView {
     toggle("showDescriptions", t("set.showDescriptions"));
     toggle("cacheImages", t("set.cacheImages"));
     toggle("confirmDelete", t("set.confirmDelete"));
+    m.addSeparator();
+    m.addItem((i) => i.setTitle(t("cmd.export")).setIcon("file-output").onClick(() => void this.plugin.exportLinks()));
+    m.addItem((i) => i.setTitle(t("cmd.import")).setIcon("file-input").onClick(() => void this.plugin.importLinks()));
     return m;
   }
 
@@ -214,6 +217,7 @@ export class VisualinkView extends ItemView {
         new CollectionNameModal(this.app, t("collection.rename"), col.name, (name) => void this.plugin.renameCollection(id, name)).open();
       }),
     );
+    m.addItem((i) => i.setTitle(t("transfer.exportCollection")).setIcon("file-output").onClick(() => void this.plugin.exportLinks(id)));
     m.addItem((i) => {
       i.setTitle(t("collection.delete")).setIcon("trash-2").setWarning(true);
       i.onClick(() => {
@@ -502,6 +506,11 @@ function colorFor(s: string) {
   return PLACEHOLDER_COLORS[h % PLACEHOLDER_COLORS.length];
 }
 
+async function copyLink(card: LinkCard) {
+  await navigator.clipboard.writeText(card.url);
+  new Notice(t("notice.linkCopied"));
+}
+
 export function openCard(plugin: VisualinkPlugin, card: LinkCard) {
   window.open(card.url, plugin.settings.openInNewTab ? "_blank" : "_self");
 }
@@ -576,6 +585,7 @@ export function renderCard(parent: HTMLElement, card: LinkCard, plugin: Visualin
     );
     act("pencil", t("card.edit"), () => new EditCardModal(plugin.app, plugin, card).open());
   }
+  act("copy", t("card.copyLink"), () => void copyLink(card));
   act("more-horizontal", t("card.more"), showMenu);
 
   el.addEventListener("click", () => openCard(plugin, card));
@@ -593,10 +603,7 @@ function cardMenu(plugin: VisualinkPlugin, card: LinkCard, extra?: (m: Menu) => 
   const m = new Menu();
   m.addItem((i) => i.setTitle(t("card.open")).setIcon("external-link").onClick(() => openCard(plugin, card)));
   m.addItem((i) =>
-    i.setTitle(t("card.copyLink")).setIcon("copy").onClick(async () => {
-      await navigator.clipboard.writeText(card.url);
-      new Notice(t("notice.linkCopied"));
-    }),
+    i.setTitle(t("card.copyLink")).setIcon("copy").onClick(() => void copyLink(card)),
   );
   m.addItem((i) =>
     i.setTitle(t("card.copyMarkdown")).setIcon("file-text").onClick(async () => {

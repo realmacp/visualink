@@ -91,8 +91,22 @@ export class VisualinkSettingTab extends PluginSettingTab {
       },
       {
         type: "group",
-        heading: t("set.export"),
+        heading: t("transfer.heading"),
         items: [
+          {
+            name: t("cmd.export"),
+            desc: t("transfer.exportDesc"),
+            render: (setting) => {
+              setting.addButton((b) => b.setButtonText(t("set.export")).onClick(() => void this.plugin.exportLinks()));
+            },
+          },
+          {
+            name: t("cmd.import"),
+            desc: t("transfer.importDesc"),
+            render: (setting) => {
+              setting.addButton((b) => b.setButtonText(t("transfer.importButton")).onClick(() => void this.plugin.importLinks()));
+            },
+          },
           {
             name: t("set.exportNote"),
             desc: t("set.exportNoteDesc"),

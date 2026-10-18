@@ -2,6 +2,7 @@ import { App, FuzzySuggestModal, Modal, Notice, Setting } from "obsidian";
 import type VisualinkPlugin from "./main";
 import { CollectionId, LinkCard } from "./types";
 import { extractUrls } from "./metadata";
+import type { ImportPlan } from "./transfer";
 import { t } from "./i18n";
 
 function parseTags(s: string): string[] {
@@ -275,5 +276,36 @@ export class CollectionPicker extends FuzzySuggestModal<PickerItem> {
       }).open();
     else if (item.target === "none") void move(undefined, t("view.sectionAll"));
     else void move(item.target, item.label);
+  }
+}
+
+/** Summary shown before importing links. */
+export class ImportModal extends Modal {
+  constructor(app: App, private plan: ImportPlan, private onConfirm: () => void | Promise<void>) {
+    super(app);
+  }
+
+  onOpen() {
+    this.titleEl.setText(t("transfer.import"));
+    const list = this.contentEl.createEl("ul", { cls: "vl-import-summary" });
+    list.createEl("li", { text: t("transfer.toAdd", { n: this.plan.cards.length }) });
+    if (this.plan.newCollections.length)
+      list.createEl("li", { text: t("transfer.newCollections", { names: this.plan.newCollections.join(", ") }) });
+    if (this.plan.skipped) list.createEl("li", { text: t("transfer.skipped", { n: this.plan.skipped }) });
+    new Setting(this.contentEl)
+      .addButton((b) => b.setButtonText(t("modal.cancel")).onClick(() => this.close()))
+      .addButton((b) =>
+        b
+          .setButtonText(t("transfer.importButton"))
+          .setCta()
+          .onClick(() => {
+            this.close();
+            void this.onConfirm();
+          }),
+      );
+  }
+
+  onClose() {
+    this.contentEl.empty();
   }
 }

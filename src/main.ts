@@ -2,7 +2,8 @@ import { Events, Notice, Plugin, TFile, WorkspaceLeaf, normalizePath, MarkdownRe
 import { Collection, CollectionId, DEFAULT_SETTINGS, LinkCard, PluginData, VisualinkSettings } from "./types";
 import { OfflineError, domainOf, downloadImage, extractUrls, fetchMetadata, normalizeUrl, suggestTitle } from "./metadata";
 import { RIBBON_ICON, VIEW_TYPE_VISUALINK, VisualinkView, renderCard } from "./view";
-import { AddLinkModal, OfflineTitleModal } from "./modals";
+import { AddLinkModal, ImportModal, OfflineTitleModal } from "./modals";
+import { ImportError, ImportPlan, applyImport, buildExport, pickFile, planImport, saveExport } from "./transfer";
 import { VisualinkSettingTab } from "./settings";
 import { LanguageSetting, setLanguage, t } from "./i18n";
 
@@ -70,6 +71,8 @@ export default class VisualinkPlugin extends Plugin {
       },
     });
     this.addCommand({ id: "refetch-failed", name: t("cmd.retryFailed"), callback: () => this.retryPending(true) });
+    this.addCommand({ id: "export-links", name: t("cmd.export"), callback: () => void this.exportLinks() });
+    this.addCommand({ id: "import-links", name: t("cmd.import"), callback: () => void this.importLinks() });
   }
 
   async changeLanguage(lang: LanguageSetting) {
@@ -82,7 +85,7 @@ export default class VisualinkPlugin extends Plugin {
   /** Switches the UI language live: commands, ribbon tooltip, open views and embedded blocks. */
   applyLanguage() {
     setLanguage(this.settings.language);
-    for (const id of ["open", "add-link", "add-from-clipboard", "refetch-failed"]) this.removeCommand(id);
+    for (const id of ["open", "add-link", "add-from-clipboard", "refetch-failed", "export-links", "import-links"]) this.removeCommand(id);
     this.registerCommands();
     this.ribbonEl?.setAttr("aria-label", t("ribbon.open"));
     for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_VISUALINK)) {
@@ -223,6 +226,52 @@ export default class VisualinkPlugin extends Plugin {
   async deleteCollection(id: CollectionId) {
     this.collections = this.collections.filter((c) => c.id !== id);
     for (const c of this.cards) if (c.collection === id) c.collection = undefined;
+    await this.persist();
+  }
+
+  // Export and import
+
+  /** Saves all links, or one collection, as a JSON file. */
+  async exportLinks(collection?: CollectionId) {
+    const data = buildExport(this, collection);
+    if (!data.cards.length) {
+      new Notice(t("transfer.empty"));
+      return;
+    }
+    const name = collection ? this.getCollection(collection)?.name.replace(/[\\/:*?"<>|]/g, "-") : undefined;
+    const saved = await saveExport(this, data, name ? `Visualink - ${name}` : "Visualink export");
+    if (saved) new Notice(t("notice.exported", { path: saved }));
+  }
+
+  /** Lets the user pick an export file, shows a summary and adds the new links. */
+  async importLinks() {
+    const text = await pickFile();
+    if (text === null) return;
+    let plan: ImportPlan;
+    try {
+      plan = planImport(this, text);
+    } catch (e) {
+      new Notice(e instanceof ImportError && e.reason === "newer" ? t("transfer.newer") : t("transfer.invalid"));
+      return;
+    }
+    if (!plan.cards.length) {
+      new Notice(t("transfer.nothing"));
+      return;
+    }
+    new ImportModal(this.app, plan, async () => {
+      const added = await applyImport(this, plan);
+      new Notice(t("transfer.imported", { n: added.length }));
+      void this.completeImported(added);
+    }).open();
+  }
+
+  /** Fetches missing metadata and caches covers for imported cards in the background. */
+  private async completeImported(cards: LinkCard[]) {
+    if (!navigator.onLine) return;
+    for (const c of cards) {
+      if (c.status === "pending") await this.enrich(c.id);
+      else if (this.settings.cacheImages && (c.image || c.favicon)) await this.cacheAssets(c);
+    }
     await this.persist();
   }
 
