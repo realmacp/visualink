@@ -1,6 +1,6 @@
 {
   "name": "visualink",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Obsidian plugin: save links as curated visual cards (inspired by Brace).",
   "main": "main.js",
   "scripts": {
